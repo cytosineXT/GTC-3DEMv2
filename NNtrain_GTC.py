@@ -594,8 +594,8 @@ for i in range(epoch):
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=False, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
         else :
             if (i+1) % 1 == 0 or i == -1:
-                logger.info('every epoch val，every 2 epoch draw')
-                if (i+1) % 2 == 0 or i+1==epoch:
+                logger.info('ID 50/100fine, every epoch val，every 50 epoch draw')
+                if (i+1) % 50 == 0 or i+1==epoch:
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=True, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
                 else:
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=False, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
