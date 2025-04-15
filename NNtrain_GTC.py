@@ -493,6 +493,7 @@ for i in range(epoch):
         savefigdata(valallmses,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}mses{ave_mse:.4f}.png'))
         valmse = ave_mse
 
+        #只画val的
         plt.clf()
         for plane, mse_values in val_mse_per_plane.items():
             plt.plot(range(0, i+1), mse_values, label=plane)
@@ -533,13 +534,13 @@ for i in range(epoch):
         plt.close()
         savefigdata(allavessims,img_path=valssimsavedir)
 
-
         lastmse = {k: v[-1] for k, v in val_mse_per_plane.items() if v}
         lastpsnr = {k: v[-1] for k, v in val_psnr_per_plane.items() if v}
         lastssim = {k: v[-1] for k, v in val_ssim_per_plane.items() if v}
         logger.info(f'epoch{i} every aircraft val mse:{lastmse},\npsnr:{lastpsnr},\nssim:{lastssim}')
         logger.info(f'total average val mse:{ave_mse:.4f},psnr:{ave_psnr:.2f},ssim:{ave_ssim:.4f}')
 
+        #画val和train在一起的
         plt.clf()
         for plane, mse_values in val_mse_per_plane.items():
             plt.plot(range(0, i+1), mse_values, label=plane)
@@ -547,7 +548,7 @@ for i in range(epoch):
         plt.plot(range(0, i+1),mses, label='train ave', linestyle='--')
         plt.xlabel('Epoch')
         plt.ylabel('MSE')
-        plt.title('Val MSE Curve')
+        plt.title('Train+Val MSE Curve')
         plt.legend()
         plt.savefig(valmsesavedir2)
         plt.close()
@@ -559,7 +560,7 @@ for i in range(epoch):
         plt.plot(range(0, i+1),psnrs, label='train ave', linestyle='--')
         plt.xlabel('Epoch')
         plt.ylabel('PSNR')
-        plt.title('Val PSNR Curve')
+        plt.title('Train+Val PSNR Curve')
         plt.legend()
         plt.savefig(valpsnrsavedir2)
         plt.close()
@@ -571,12 +572,12 @@ for i in range(epoch):
         plt.plot(range(0, i+1),ssims, label='train ave', linestyle='--')
         plt.xlabel('Epoch')
         plt.ylabel('SSIM')
-        plt.title('Val SSIM Curve')
+        plt.title('Train+Val SSIM Curve')
         plt.legend()
         plt.savefig(valssimsavedir2)
         plt.close()
 
-    else:
+    else: #ID实验
         if mode == "10train":
             if (i+1) % 1 == 0 or i == -1: 
                 logger.info('every epoch val，every 100 epoch draw')
@@ -594,11 +595,93 @@ for i in range(epoch):
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=False, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
         else :
             if (i+1) % 1 == 0 or i == -1:
-                logger.info('every epoch val，every 2 epoch draw')
-                if (i+1) % 2 == 0 or i+1==epoch:
+                logger.info('ID 50/100fine, every epoch val，every 50 epoch draw')
+                if (i+1) % 50 == 0 or i+1==epoch:
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=True, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
                 else:
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=False, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
+        valallpsnrs.extend(valpsnrs) 
+        valallssims.extend(valssims)
+        valallmses.extend(valmses) 
+
+        ave_psnr = sum(valallpsnrs)/len(valallpsnrs)
+        ave_ssim = sum(valallssims)/len(valallssims)
+        ave_mse = sum(valallmses)/len(valallmses)
+        allavemses.append(ave_mse)
+        allavepsnrs.append(ave_psnr)
+        allavessims.append(ave_ssim)
+
+        statisdir = os.path.join(save_dir,f'sta/statisticAll_epoch{i}_PSNR{ave_psnr:.2f}dB_SSIM{ave_ssim:.4f}_MSE:{ave_mse:.4f}.png')
+        if not os.path.exists(os.path.dirname(statisdir)):
+            os.makedirs(os.path.dirname(statisdir))
+        plotstatistic2(valallpsnrs,valallssims,valallmses,statisdir)
+        savefigdata(valallpsnrs,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}psnrs{ave_psnr:.2f}.png'))
+        savefigdata(valallssims,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}ssims{ave_ssim:.4f}.png'))
+        savefigdata(valallmses,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}mses{ave_mse:.4f}.png'))
+        valmse = ave_mse
+
+        #只画val的
+        plt.clf()
+        plt.plot(range(0, i+1),allavemses, label='ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('MSE')
+        plt.title('Val MSE Curve')
+        plt.legend()
+        plt.savefig(valmsesavedir)
+        plt.close()
+        savefigdata(allavemses,img_path=valmsesavedir)
+
+        plt.clf()
+        plt.plot(range(0, i+1),allavepsnrs, label='ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('PSNR')
+        plt.title('Val PSNR Curve')
+        plt.legend()
+        plt.savefig(valpsnrsavedir)
+        plt.close()
+        savefigdata(allavepsnrs,img_path=valpsnrsavedir)
+
+
+        plt.clf()
+        plt.plot(range(0, i+1),allavessims, label='ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('SSIM')
+        plt.title('Val SSIM Curve')
+        plt.legend()
+        plt.savefig(valssimsavedir)
+        plt.close()
+        savefigdata(allavessims,img_path=valssimsavedir)
+
+        #画val和train在一起的
+        plt.clf()
+        plt.plot(range(0, i+1),allavemses, label='val ave', linestyle='--')
+        plt.plot(range(0, i+1),mses, label='train ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('MSE')
+        plt.title('Train+Val MSE Curve')
+        plt.legend()
+        plt.savefig(valmsesavedir2)
+        plt.close()
+
+        plt.clf()
+        plt.plot(range(0, i+1),allavepsnrs, label='val ave', linestyle='--')
+        plt.plot(range(0, i+1),psnrs, label='train ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('PSNR')
+        plt.title('Train+Val PSNR Curve')
+        plt.legend()
+        plt.savefig(valpsnrsavedir2)
+        plt.close()
+
+        plt.clf()
+        plt.plot(range(0, i+1),allavessims, label='val ave', linestyle='--')
+        plt.plot(range(0, i+1),ssims, label='train ave', linestyle='--')
+        plt.xlabel('Epoch')
+        plt.ylabel('SSIM')
+        plt.title('Train+Val SSIM Curve')
+        plt.legend()
+        plt.savefig(valssimsavedir2)
+        plt.close()
 
     if minmse > valmse:
         minmse = valmse
