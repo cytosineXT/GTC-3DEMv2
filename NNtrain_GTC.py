@@ -244,7 +244,7 @@ for i in range(epoch):
     logger.info('\n')
     epoch_loss = []
     timeepoch = time.time()
-    for in_em1,rcs1 in tqdm(dataloader,desc=f'epoch:{i+1},train prosecc,lr={scheduler.get_last_lr()[0]:.5f}',ncols=130,postfix=f'former epoch:{i},loss_mean:{(epoch_mean_loss):.4f}'):
+    for in_em1,rcs1 in tqdm(dataloader,desc=f'epoch:{i},lr={scheduler.get_last_lr()[0]:.5f}',ncols=100,postfix=f'loss:{(epoch_mean_loss):.4f}'):
 
         jj=jj+1
         in_em0 = in_em1.copy()
