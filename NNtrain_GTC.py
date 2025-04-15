@@ -167,18 +167,19 @@ logdir = os.path.join(save_dir,'log.txt')
 logger = get_logger(logdir)
 logger.info(args)
 logger.info(f'seed:{seed}')
+valallpsnrs = []
+valallssims = []
+valallmses = []
+allavemses = []
+allavepsnrs = []
+allavessims = []
 
 if args.fold:
     logger.info(f'dataset setting:{args.fold} ,val on {val_planes}, train on {train_planes}, mode={mode}')
     val_mse_per_plane = {plane: [] for plane in val_planes}
     val_psnr_per_plane = {plane: [] for plane in val_planes}
     val_ssim_per_plane = {plane: [] for plane in val_planes}
-    valallpsnrs = []
-    valallssims = []
-    valallmses = []
-    allavemses = []
-    allavepsnrs = []
-    allavessims = []
+
     
     if mode=='10train' or 'fasttest': #10train 50fine 100fine
         train_files = [plane + '_mie_10train' for plane in train_planes]
