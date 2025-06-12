@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--draw', type=bool, default=True, help='Whether to enable drawing')
 
     parser.add_argument('--trainname', type=str, default='GTCv3', help='logname')
-    parser.add_argument('--folder', type=str, default='testtrain', help='exp output folder name')
+    parser.add_argument('--savedir', type=str, default='testtrain', help='exp output folder name')
     parser.add_argument('--mode', type=str, default='fasttest', help='10train 50fine 100fine fasttest')
     parser.add_argument('--loss', type=str, default='L1', help='L1 best, mse 2nd')
     # parser.add_argument('--rcsdir', type=str, default='/mnt/Disk/jiangxiaotian/datasets/Datasets_3DEM/allplanes/mie/b943_mie_val', help='Path to rcs directory')
@@ -82,7 +82,7 @@ attnlayer = args.attn
 learning_rate = args.lr
 cudadevice = args.cuda
 name = args.trainname
-folder = args.folder
+folder = args.savedir
 mode = args.mode
 batchsize = args.batch
 valbatch = args.valbatch
