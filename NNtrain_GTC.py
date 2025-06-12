@@ -167,12 +167,7 @@ logdir = os.path.join(save_dir,'log.txt')
 logger = get_logger(logdir)
 logger.info(args)
 logger.info(f'seed:{seed}')
-valallpsnrs = []
-valallssims = []
-valallmses = []
-allavemses = []
-allavepsnrs = []
-allavessims = []
+
 
 if args.fold:
     logger.info(f'dataset setting:{args.fold} ,val on {val_planes}, train on {train_planes}, mode={mode}')
@@ -235,10 +230,16 @@ autoencoder = autoencoder.to(device)
 optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=lr_time)
 
+allavemses = []
+allavepsnrs = []
+allavessims = []
 flag = 1
 GTflag = 1
 flopflag = 1
 for i in range(epoch):
+    valallpsnrs = []
+    valallssims = []
+    valallmses = []
     psnr_list, ssim_list, mse_list, nmse_list, rmse_list, l1_list, percentage_error_list = [], [], [], [], [], [], []
     jj=0
     logger.info('\n')
@@ -475,7 +476,7 @@ for i in range(epoch):
             val_psnr_per_plane[plane].append(valpsnr.item())
             val_ssim_per_plane[plane].append(valssim.item())
 
-            valallpsnrs.extend(valpsnrs) 
+            valallpsnrs.extend(valpsnrs) #这里用是因为val是单飞机，但是指标要总的
             valallssims.extend(valssims)
             valallmses.extend(valmses) 
         ave_psnr = sum(valallpsnrs)/len(valallpsnrs)
@@ -601,25 +602,11 @@ for i in range(epoch):
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=True, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
                 else:
                     valmse, valpsnr, valssim, valpsnrs, valssims, valmses =valmain(draw=False, device=device, weight=lastsavedir, rcsdir=valdir, save_dir=save_dir, logger=logger, epoch=i, trainval=True, draw3d=False, valdataloader=valdataloader, attnlayer=attnlayer)
-        valallpsnrs.extend(valpsnrs) 
-        valallssims.extend(valssims)
-        valallmses.extend(valmses) 
 
-        ave_psnr = sum(valallpsnrs)/len(valallpsnrs)
-        ave_ssim = sum(valallssims)/len(valallssims)
-        ave_mse = sum(valallmses)/len(valallmses)
-        allavemses.append(ave_mse)
-        allavepsnrs.append(ave_psnr)
-        allavessims.append(ave_ssim)
+        allavemses.append(valmse)
+        allavepsnrs.append(valpsnr)
+        allavessims.append(valssim)
 
-        statisdir = os.path.join(save_dir,f'sta/statisticAll_epoch{i}_PSNR{ave_psnr:.2f}dB_SSIM{ave_ssim:.4f}_MSE:{ave_mse:.4f}.png')
-        if not os.path.exists(os.path.dirname(statisdir)):
-            os.makedirs(os.path.dirname(statisdir))
-        plotstatistic2(valallpsnrs,valallssims,valallmses,statisdir)
-        savefigdata(valallpsnrs,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}psnrs{ave_psnr:.2f}.png'))
-        savefigdata(valallssims,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}ssims{ave_ssim:.4f}.png'))
-        savefigdata(valallmses,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}mses{ave_mse:.4f}.png'))
-        valmse = ave_mse
 
         #只画val的
         plt.clf()

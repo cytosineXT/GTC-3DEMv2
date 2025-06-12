@@ -236,7 +236,7 @@ def valmain(draw, device, weight, rcsdir, save_dir, logger, epoch, trainval=Fals
         statisdir = os.path.join(save_dir,f'sta/statistic_epoch{epoch}_PSNR{ave_psnr:.2f}dB_SSIM{ave_ssim:.4f}_MSE:{ave_mse:.4f}_Loss{ave_loss:.4f}.png')
         if not os.path.exists(os.path.dirname(statisdir)):
             os.makedirs(os.path.dirname(statisdir))
-        plotstatistic2(psnrs,ssims,mses,statisdir)
+        plotstatistic2(psnrs,ssims,mses,statisdir) #这里直接用psnrs画统计图和统计指标
         savefigdata(psnrs,img_path=os.path.join(save_dir,f'sta/valall_epoch{epoch}psnrs{ave_psnr:.2f}.png'))
         savefigdata(ssims,img_path=os.path.join(save_dir,f'sta/valall_epoch{epoch}ssims{ave_ssim:.4f}.png'))
         savefigdata(mses,img_path=os.path.join(save_dir,f'sta/valall_epoch{epoch}mses{ave_mse:.4f}.png'))
