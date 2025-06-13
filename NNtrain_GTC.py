@@ -57,7 +57,7 @@ def parse_args():
 
     parser.add_argument('--lam_max', type=float, default=0.001, help='control max loss, i love 0.001')
     parser.add_argument('--lam_hel', type=float, default=0.1, help='control helmholtz loss, i love 0.001')
-    parser.add_argument('--lam_fft', type=float, default=0.1, help='control fft loss, i love 0.001')
+    parser.add_argument('--lam_fft', type=float, default=1, help='control fft loss, i love 0.001')
 
     return parser.parse_args()
 
