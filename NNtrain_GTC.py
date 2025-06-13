@@ -228,8 +228,8 @@ logger.info(f'device:{device}')
 autoencoder = MeshCodec(
     device = device,
     attn_encoder_depth = attnlayer,
-    lambda_helmholtz=0.1,
-    lambda_bandlimit=0.1,
+    lambda_helmholtz=lambda_helmholtz,
+    lambda_bandlimit=lambda_bandlimit,
 )
 get_model_memory(autoencoder,logger)
 total_params = sum(p.numel() for p in autoencoder.parameters())
