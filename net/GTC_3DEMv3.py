@@ -43,7 +43,7 @@ def calculate_helmholtz_loss(rcs_pred, freqs_ghz, device):
     
     # 5. 损失是残差的均方误差
     loss = torch.mean(helmholtz_residual.pow(2))
-    return loss
+    return torch.log1p(loss) #tensor(18933.2702, dtype=torch.float64, grad_fn=<MeanBackward0>) log后tensor(9.8487, dtype=torch.float64, grad_fn=<Log1PBackward0>)
 
 def calculate_bandlimit_loss(rcs_pred, freqs_ghz, device, alpha=10.0):
     """
@@ -100,14 +100,18 @@ def loss_fn(decoded, GT, freqs_ghz, device, loss_type='L1', gama=0.001, lambda_h
     primary_loss = supervision_loss + gama * maxloss
     
     # 2. 计算物理先验损失
-    helmholtz_loss = calculate_helmholtz_loss(decoded, freqs_ghz, device)
-    bandlimit_loss = calculate_bandlimit_loss(decoded, freqs_ghz, device)
+    helmholtz_loss = calculate_helmholtz_loss(decoded, freqs_ghz, device) #tensor(18933.2702, dtype=torch.float64, grad_fn=<MeanBackward0>)
+    bandlimit_loss = calculate_bandlimit_loss(decoded, freqs_ghz, device) #tensor(0.1101, grad_fn=<MeanBackward0>)
     
     # 3. 加权求和得到总损失
     total_loss = primary_loss + lambda_helmholtz * helmholtz_loss + lambda_bandlimit * bandlimit_loss
     
     # 返回总损失以及各个子项，方便监控
     return total_loss, primary_loss, helmholtz_loss, bandlimit_loss
+    # maxloss=1.8444 l1=0.4883 helLoss=9.8487 bandLoss=0.1101 
+    # 0.001 1 0.001 0
+    #         0.0001 0
+    #         0 0.01
 
 # --- 原有代码（保持不变）---
 def l2norm(t):
