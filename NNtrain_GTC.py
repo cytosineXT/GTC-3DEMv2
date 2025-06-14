@@ -1,8 +1,8 @@
 import torch
 import time
 from tqdm import tqdm
-from net.GTC_3DEMv3 import MeshCodec
-# from net.GTC_3DEMv2 import MeshCodec
+from net.GTC_3DEMv3_2 import MeshCodec
+# from net.GTC_3DEMv3 import MeshCodec
 import torch.utils.data.dataloader as DataLoader
 import os
 import sys
@@ -32,12 +32,12 @@ def setup_seed(seed):
 def parse_args():
     parser = argparse.ArgumentParser(description="Script with customizable parameters using argparse.")
     parser.add_argument('--epoch', type=int, default=200, help='Number of training epochs')
-    parser.add_argument('--batch', type=int, default=16, help='batchsize')
+    parser.add_argument('--batch', type=int, default=8, help='batchsize')
     parser.add_argument('--valbatch', type=int, default=32, help='valbatchsize')
     parser.add_argument('--smooth', type=bool, default=False, help='Whether to use pretrained weights')
     parser.add_argument('--draw', type=bool, default=True, help='Whether to enable drawing')
 
-    parser.add_argument('--trainname', type=str, default='GTCv3.1', help='logname')
+    parser.add_argument('--trainname', type=str, default='GTCv3.2', help='logname')
     parser.add_argument('--savedir', type=str, default='testtrain', help='exp output folder name')
     parser.add_argument('--mode', type=str, default='fasttest', help='10train 50fine 100fine fasttest')
     parser.add_argument('--loss', type=str, default='L1', help='L1 best, mse 2nd')
@@ -52,12 +52,13 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=7, help='Random seed for reproducibility')
     parser.add_argument('--attn', type=int, default=0, help='Transformer layers')
     parser.add_argument('--lr', type=float, default=0.001, help='Loss threshold or gamma parameter')
-    parser.add_argument('--cuda', type=str, default='cuda:0', help='CUDA device to use(cpu cuda:0 cuda:1...)')
+    parser.add_argument('--cuda', type=str, default='cpu', help='CUDA device to use(cpu cuda:0 cuda:1...)')
     parser.add_argument('--fold', type=str, default=None, help='Fold to use for validation (None fold1 fold2 fold3 fold4)')
 
     parser.add_argument('--lam_max', type=float, default=0.001, help='control max loss, i love 0.001')
-    parser.add_argument('--lam_hel', type=float, default=0.1, help='control helmholtz loss, i love 0.001')
-    parser.add_argument('--lam_fft', type=float, default=1, help='control fft loss, i love 0.001')
+    parser.add_argument('--lam_hel', type=float, default=0, help='control helmholtz loss, i love 0.001')
+    parser.add_argument('--lam_fft', type=float, default=0, help='control fft loss, i love 0.001')
+    parser.add_argument('--lam_rec', type=float, default=0.1, help='control receprocity loss, i love 0.001')
 
     return parser.parse_args()
 
@@ -91,6 +92,7 @@ loss_type = args.loss
 gama = args.lam_max
 lambda_helmholtz = args.lam_hel
 lambda_bandlimit = args.lam_fft
+lambda_reciprocity = args.lam_rec
 
 # datafolder = '/mnt/d/datasets/Dataset_3DEM/mie' # 305simu
 # datafolder = '/mnt/Disk/jiangxiaotian/datasets/Datasets_3DEM/allplanes/mie' # 3090red
@@ -156,7 +158,7 @@ oneplane = args.rcsdir.split('/')[-1][0:4]
 
 from datetime import datetime
 date = datetime.today().strftime("%m%d")
-save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}_{cudadevice}_'), exist_ok=False))
+save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}lc{lambda_reciprocity}_{cudadevice}_'), exist_ok=False))
 
 lastsavedir = os.path.join(save_dir,'last.pt')
 bestsavedir = os.path.join(save_dir,'best.pt')
@@ -230,6 +232,7 @@ autoencoder = MeshCodec(
     attn_encoder_depth = attnlayer,
     lambda_helmholtz=lambda_helmholtz,
     lambda_bandlimit=lambda_bandlimit,
+    lambda_reciprocity=lambda_reciprocity
 )
 get_model_memory(autoencoder,logger)
 total_params = sum(p.numel() for p in autoencoder.parameters())
