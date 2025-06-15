@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument('--smooth', type=bool, default=False, help='Whether to use pretrained weights')
     parser.add_argument('--draw', type=bool, default=True, help='Whether to enable drawing')
 
-    parser.add_argument('--trainname', type=str, default='GTCv3.2', help='logname')
+    parser.add_argument('--trainname', type=str, default='GTCv3.3', help='logname')
     parser.add_argument('--savedir', type=str, default='testtrain', help='exp output folder name')
     parser.add_argument('--mode', type=str, default='fasttest', help='10train 50fine 100fine fasttest')
     parser.add_argument('--loss', type=str, default='L1', help='L1 best, mse 2nd')
@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument('--lam_hel', type=float, default=0.001, help='control helmholtz loss, i love 0.001')
     parser.add_argument('--lam_fft', type=float, default=0, help='control fft loss, i love 0.001')
     parser.add_argument('--lam_rec', type=float, default=0, help='control receprocity loss, i love 0.001')
-    parser.add_argument('--pinnepoch', type=int, default=1, help='Number of pinn loss adding epochs, if epochnow > pinnepoch, start to add pinn loss. 0 or -1 start from beginning, >200 means never add pinn loss')
+    parser.add_argument('--pinnepoch', type=int, default=0, help='Number of pinn loss adding epochs, if epochnow > pinnepoch, start to add pinn loss. 0 or -1 start from beginning, >200 means never add pinn loss')
 
 
     return parser.parse_args()
