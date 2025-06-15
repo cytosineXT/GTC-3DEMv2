@@ -37,6 +37,14 @@ python NNval_GNN4foldbatch.py --pretrainweight 'output/testtrain/your_train_fold
 
 ```
 
-v1 nn.embedding
-v2 nn.linear embed
-v3 2025年6月12日20:31:08 PINN:helmholtz fft loss
+# v1 
+nn.embedding
+
+# v2 
+nn.linear embed
+
+# v3 
+v3.0 2025年6月12日20:31:08 PINN:helmholtz fft loss, helmloss without log
+v3.1 helmloss with log
+v3.2 2025年6月15日11:11:17 add reciporcity loss 
+v3.3 2025年6月15日11:50:59 add pinnepoch, refine loss_fn

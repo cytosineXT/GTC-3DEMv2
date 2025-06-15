@@ -56,9 +56,11 @@ def parse_args():
     parser.add_argument('--fold', type=str, default=None, help='Fold to use for validation (None fold1 fold2 fold3 fold4)')
 
     parser.add_argument('--lam_max', type=float, default=0.001, help='control max loss, i love 0.001')
-    parser.add_argument('--lam_hel', type=float, default=0, help='control helmholtz loss, i love 0.001')
+    parser.add_argument('--lam_hel', type=float, default=0.001, help='control helmholtz loss, i love 0.001')
     parser.add_argument('--lam_fft', type=float, default=0, help='control fft loss, i love 0.001')
-    parser.add_argument('--lam_rec', type=float, default=0.1, help='control receprocity loss, i love 0.001')
+    parser.add_argument('--lam_rec', type=float, default=0, help='control receprocity loss, i love 0.001')
+    parser.add_argument('--pinnepoch', type=int, default=1, help='Number of pinn loss adding epochs, if epochnow > pinnepoch, start to add pinn loss. 0 or -1 start from beginning, >200 means never add pinn loss')
+
 
     return parser.parse_args()
 
@@ -255,6 +257,7 @@ flag = 1
 GTflag = 1
 flopflag = 1
 for i in range(epoch):
+    epoch_flag = 1
     valallpsnrs = []
     valallssims = []
     valallmses = []
@@ -272,7 +275,7 @@ for i in range(epoch):
         objlist , ptlist = find_matching_files(in_em1[0], "./planes")
         planesur_faces, planesur_verts, planesur_faceedges, geoinfo = process_files(objlist, device)
 
-        loss, outrcs, psnr_mean, _, ssim_mean, _, mse, nmse, rmse, l1, percentage_error, _ = autoencoder(
+        loss, outrcs, psnr_mean, _, ssim_mean, _, mse, nmse, rmse, l1, percentage_error, _ , metrics= autoencoder(
             vertices = planesur_verts,
             faces = planesur_faces, #torch.Size([batchsize, 33564, 3])
             face_edges = planesur_faceedges,
@@ -282,7 +285,14 @@ for i in range(epoch):
             device = device,
             gama=gama,
             loss_type=loss_type,
+            epochnow = i,
+            pinnepoch= args.pinnepoch,
+            epoch_flag = epoch_flag,
         )
+
+        if epoch_flag == 1:
+            logger.info(f'\n{metrics}')
+            epoch_flag = 0
         if flopflag == 1:
             temp_model = copy.deepcopy(autoencoder)
             wrapped_model = WrappedModel(temp_model)
