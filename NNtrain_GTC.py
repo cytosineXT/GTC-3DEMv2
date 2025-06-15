@@ -160,7 +160,7 @@ oneplane = args.rcsdir.split('/')[-1][0:4]
 
 from datetime import datetime
 date = datetime.today().strftime("%m%d")
-save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}lc{lambda_reciprocity}_{cudadevice}_'), exist_ok=False))
+save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}epinn{args.pinnepoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}lc{lambda_reciprocity}_{cudadevice}_'), exist_ok=False))
 
 lastsavedir = os.path.join(save_dir,'last.pt')
 bestsavedir = os.path.join(save_dir,'best.pt')
