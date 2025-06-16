@@ -136,7 +136,8 @@ accumulation_step = 8
 threshold = 20
 bestloss = 1
 epoch_mean_loss = 0.0
-minmse = 1.0
+maxpsnr = 1.0
+# minmse = 1.0
 valmse = 1.0
 in_ems = []
 rcss = []
@@ -521,7 +522,7 @@ for i in range(epoch):
         savefigdata(valallpsnrs,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}psnrs{ave_psnr:.2f}.png'))
         savefigdata(valallssims,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}ssims{ave_ssim:.4f}.png'))
         savefigdata(valallmses,img_path=os.path.join(save_dir,f'sta/valall_epoch{i}mses{ave_mse:.4f}.png'))
-        valmse = ave_mse
+        # valmse = ave_mse
 
         #只画val的
         plt.clf()
@@ -699,14 +700,16 @@ for i in range(epoch):
         plt.savefig(valssimsavedir2)
         plt.close()
 
-    if minmse > valmse:
-        minmse = valmse
+    if maxpsnr < ave_psnr:
+        maxpsnr = ave_psnr
+    # if minmse > valmse:
+    #     minmse = valmse
         if os.path.exists(maxsavedir):
             os.remove(maxsavedir)
         torch.save(autoencoder.state_dict(), maxsavedir)
 
 if i+1==epoch:
-    renamedir = save_dir+'m'+f'{minmse:.4f}'[2:]
+    renamedir = save_dir+'p'+f'{maxpsnr:.4f}'[2:]
     os.rename(save_dir,renamedir)
 
 logger.info(f"damaged files：{corrupted_files}")
