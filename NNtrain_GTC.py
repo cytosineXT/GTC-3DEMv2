@@ -1,7 +1,8 @@
 import torch
 import time
 from tqdm import tqdm
-from net.GTC_3DEMv3_2 import MeshCodec
+from net.GTC_3DEMv3_3 import MeshCodec
+# from net.GTC_3DEMv3_2 import MeshCodec
 # from net.GTC_3DEMv3_1 import MeshCodec
 import torch.utils.data.dataloader as DataLoader
 import os
@@ -31,13 +32,13 @@ def setup_seed(seed):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Script with customizable parameters using argparse.")
-    parser.add_argument('--epoch', type=int, default=200, help='Number of training epochs')
-    parser.add_argument('--batch', type=int, default=8, help='batchsize')
+    parser.add_argument('--epoch', type=int, default=1, help='Number of training epochs')
+    parser.add_argument('--batch', type=int, default=12, help='batchsize')
     parser.add_argument('--valbatch', type=int, default=32, help='valbatchsize')
     parser.add_argument('--smooth', type=bool, default=False, help='Whether to use pretrained weights')
     parser.add_argument('--draw', type=bool, default=True, help='Whether to enable drawing')
 
-    parser.add_argument('--trainname', type=str, default='GTCv3.3', help='logname')
+    parser.add_argument('--trainname', type=str, default='v3.3n', help='logname')
     parser.add_argument('--savedir', type=str, default='testtrain', help='exp output folder name')
     parser.add_argument('--mode', type=str, default='fasttest', help='10train 50fine 100fine fasttest')
     parser.add_argument('--loss', type=str, default='L1', help='L1 best, mse 2nd')
@@ -160,7 +161,7 @@ oneplane = args.rcsdir.split('/')[-1][0:4]
 
 from datetime import datetime
 date = datetime.today().strftime("%m%d")
-save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}epinn{args.pinnepoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}lc{lambda_reciprocity}_{cudadevice}_'), exist_ok=False))
+save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{name}_{mode}{loss_type}_{args.fold if args.fold else oneplane}_b{batchsize}e{epoch}ep{args.pinnepoch}Tr{attnlayer}_lh{lambda_helmholtz}lf{lambda_bandlimit}lc{lambda_reciprocity}_{cudadevice}_'), exist_ok=False))
 
 lastsavedir = os.path.join(save_dir,'last.pt')
 bestsavedir = os.path.join(save_dir,'best.pt')
@@ -382,9 +383,9 @@ for i in range(epoch):
     percentage_errors.append(epoch_percentage_error.detach().cpu())
     mainLs.append(epoch_main_loss.detach().cpu())
     maxLs.append(epoch_max_loss.detach().cpu())
-    helmholtzLs.append(epoch_helmholtz_loss.detach().cpu())
-    bandlimitLs.append(epoch_bandlimit_loss.detach().cpu())
-    reciprocityLs.append(epoch_reciprocity_loss.detach().cpu())
+    helmholtzLs.append(epoch_helmholtz_loss)
+    bandlimitLs.append(epoch_bandlimit_loss)
+    reciprocityLs.append(epoch_reciprocity_loss)
     logger.info('用于绘图的epoch metrics 计算完成')
 
     if bestloss > epoch_mean_loss:
@@ -647,7 +648,7 @@ logger.info(f"damaged files：{corrupted_files}")
 logger.info(f'train finished time：{time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time()))}')
 logger.info(f'train time consume：{lasttime:.2f}小时')
 
-renamedir = save_dir+f'P{lastpsnr:.2f}'+f'S{lastssim:.4f}'+f'M{lastmse:.4f}'+ f'T{lasttime:.2f}h'
+renamedir = save_dir+f'P{lastpsnr:.2f}-'+f'S{lastssim:.4f}-'+f'M{lastmse:.4f}-'+ f'T{lasttime:.2f}h'
 os.rename(save_dir,renamedir)
 
 
