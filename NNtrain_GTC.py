@@ -142,11 +142,10 @@ valmse = 1.0
 in_ems = []
 rcss = []
 cnt = 0
-losses = [] 
-psnrs = []
-ssims = []
-mses = []
+losses, psnrs, ssims, mses = [], [], [], []
 nmses, rmses, l1s, percentage_errors = [], [], [], []
+mainLs, maxLs, helmholtzLs, bandlimitLs, reciprocityLs = [], [], [], [], []
+lastpsnr, lastmse, lastssim, lasttime = 0.0, 0.0, 0.0, 0.0
 corrupted_files = []
 lgrcs = False
 shuffle = True
@@ -165,24 +164,8 @@ save_dir = str(increment_path(Path(ROOT / "output" / f"{folder}" / f'{date}_{nam
 
 lastsavedir = os.path.join(save_dir,'last.pt')
 bestsavedir = os.path.join(save_dir,'best.pt')
-maxsavedir = os.path.join(save_dir,'minmse.pt')
-lossessavedir = os.path.join(save_dir,'loss.png')
-psnrsavedir = os.path.join(save_dir,'psnr.png')
-ssimsavedir = os.path.join(save_dir,'ssim.png')
-msesavedir = os.path.join(save_dir,'mse.png')
-nmsesavedir = os.path.join(save_dir,'nmse.png')
-rmsesavedir = os.path.join(save_dir,'rmse.png')
-l1savedir = os.path.join(save_dir,'l1.png')
-valmsesavedir = os.path.join(save_dir,'valmse.png')
-valpsnrsavedir = os.path.join(save_dir,'valpsnr.png')
-valssimsavedir = os.path.join(save_dir,'valssim.png')
-valmsesavedir2 = os.path.join(save_dir,'Trainvalmse.png')
-valpsnrsavedir2 = os.path.join(save_dir,'Trainvalpsnr.png')
-valssimsavedir2 = os.path.join(save_dir,'Trainvalssim.png')
-percentage_errorsavedir = os.path.join(save_dir,'percentage_error.png')
-allinonesavedir = os.path.join(save_dir,'allinone.png')
-logdir = os.path.join(save_dir,'log.txt')
-logger = get_logger(logdir)
+
+logger = get_logger(os.path.join(save_dir,'log.txt'))
 logger.info(args)
 logger.info(f'seed:{seed}')
 
@@ -260,6 +243,7 @@ for i in range(epoch):
     valallssims = []
     valallmses = []
     psnr_list, ssim_list, mse_list, nmse_list, rmse_list, l1_list, percentage_error_list = [], [], [], [], [], [], []
+    mainLlist, maxLlist, helmholtzLlist, bandlimitLlist, reciprocityLlist = [], [], [], [], [] 
     jj=0
     logger.info('\n')
     epoch_loss = []
@@ -319,6 +303,8 @@ for i in range(epoch):
         if (jj) % accumulation_step == 0 or (jj) == len(dataloader):
             optimizer.step() 
             optimizer.zero_grad()
+        
+        # 将一个batch的指标append到列表中，用于后续计算epoch指标
         psnr_list.append(psnr_mean)
         ssim_list.append(ssim_mean)
         mse_list.append(mse)
@@ -326,6 +312,20 @@ for i in range(epoch):
         rmse_list.append(rmse)
         l1_list.append(l1)
         percentage_error_list.append(percentage_error)
+        mainLlist.append(metrics['main_loss'])
+        maxLlist.append(metrics['max_loss'])
+        helmholtzLlist.append(metrics['helmholtz_loss'])
+        bandlimitLlist.append(metrics['bandlimit_loss'])
+        reciprocityLlist.append(metrics['reciprocity_loss'])
+
+                # metrics = {
+        #         'total_loss': total_loss,
+        #         'main_loss': mainloss,
+        #         'max_loss': maxloss,
+        #         'helmholtz_loss': helmholtz_loss,
+        #         'bandlimit_loss': bandlimit_loss,
+        #         'reciprocity_loss': reciprocity_loss,
+        #     }
         
 
         in_em0[1:] = [tensor.to(device) for tensor in in_em0[1:]]
@@ -356,8 +356,8 @@ for i in range(epoch):
         plot2DRCS(rcs=drawrcs.squeeze(), savedir=out2Drcspngpath, logger=logger,cutmax=None)
         logger.info(f'drawed {i+1} epoch map')
 
+    # 将batch指标list 计算为epoch指标
     epoch_mean_loss = sum(epoch_loss)/len(epoch_loss)
-    losses.append(epoch_mean_loss)
     epoch_psnr = sum(psnr_list)/len(psnr_list) 
     epoch_ssim = sum(ssim_list)/len(ssim_list)
     epoch_mse = sum(mse_list)/len(mse_list)
@@ -365,6 +365,14 @@ for i in range(epoch):
     epoch_rmse = sum(rmse_list)/len(rmse_list)
     epoch_l1 = sum(l1_list)/len(l1_list)
     epoch_percentage_error = sum(percentage_error_list)/len(percentage_error_list)
+    epoch_main_loss = sum(mainLlist)/len(mainLlist)
+    epoch_max_loss = sum(maxLlist)/len(maxLlist)
+    epoch_helmholtz_loss = sum(helmholtzLlist)/len(helmholtzLlist)
+    epoch_bandlimit_loss = sum(bandlimitLlist)/len(bandlimitLlist)
+    epoch_reciprocity_loss = sum(reciprocityLlist)/len(reciprocityLlist)
+
+    # 将epoch指标append到list中，用于后续绘图
+    losses.append(epoch_mean_loss)
     psnrs.append(epoch_psnr.detach().cpu())
     ssims.append(epoch_ssim.detach().cpu())
     mses.append(epoch_mse.detach().cpu())
@@ -372,7 +380,12 @@ for i in range(epoch):
     rmses.append(epoch_rmse.detach().cpu())
     l1s.append(epoch_l1.detach().cpu())
     percentage_errors.append(epoch_percentage_error.detach().cpu())
-    logger.info('epoch metrics computed')
+    mainLs.append(epoch_main_loss.detach().cpu())
+    maxLs.append(epoch_max_loss.detach().cpu())
+    helmholtzLs.append(epoch_helmholtz_loss.detach().cpu())
+    bandlimitLs.append(epoch_bandlimit_loss.detach().cpu())
+    reciprocityLs.append(epoch_reciprocity_loss.detach().cpu())
+    logger.info('用于绘图的epoch metrics 计算完成')
 
     if bestloss > epoch_mean_loss:
         bestloss = epoch_mean_loss
@@ -390,91 +403,44 @@ for i in range(epoch):
 
     logger.info(f'↓-----------------------this epoch time consume：{time.strftime("%H:%M:%S", time.gmtime(time.time()-timeepoch))}-----------------------↓')
     logger.info(f'↑----epoch:{i+1}(lr:{scheduler.get_last_lr()[0]:.4f}),loss:{epoch_mean_loss:.4f},psnr:{epoch_psnr:.2f},ssim:{epoch_ssim:.4f},mse:{epoch_mse:.4f}----↑')
-    
-    plt.clf()
-    plt.figure(figsize=(7, 4.5))
-    plt.plot(range(0, i+1), losses)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training Loss Curve')
-    plt.savefig(lossessavedir)
-    savefigdata(losses,img_path=lossessavedir)
-    plt.close()
-    
-    plt.clf()
-    plt.plot(range(0, i+1), psnrs)
-    plt.xlabel('Epoch')
-    plt.ylabel('PSNR')
-    plt.title('Training PSNR Curve')
-    plt.savefig(psnrsavedir)
-    savefigdata(psnrs,img_path=psnrsavedir)
-    plt.close()
 
-    plt.clf()
-    plt.plot(range(0, i+1), ssims)
-    plt.xlabel('Epoch')
-    plt.ylabel('SSIM')
-    plt.title('Training SSIM Curve')
-    plt.savefig(ssimsavedir)
-    savefigdata(ssims,img_path=ssimsavedir)
-    plt.close()
+    def draw2dcurve(curve, savedir, ylabel, title):
+        plt.clf()
+        plt.figure(figsize=(7, 4.5))
+        plt.plot(range(0, i+1), curve)
+        plt.xlabel('Epoch')
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.savefig(savedir)
+        savefigdata(curve,img_path=savedir)
+        plt.close()
+    draw2dcurve(losses, os.path.join(save_dir,'loss.png'), 'Loss', 'Training Loss Curve')
+    draw2dcurve(psnrs, os.path.join(save_dir,'psnr.png'), 'PSNR', 'Training PSNR Curve')
+    draw2dcurve(ssims, os.path.join(save_dir,'ssim.png'), 'SSIM', 'Training SSIM Curve')
+    draw2dcurve(mses, os.path.join(save_dir,'mse.png'), 'MSE', 'Training MSE Curve')
+    draw2dcurve(nmses, os.path.join(save_dir,'nmse.png'), 'NMSE', 'Training NMSE Curve')
+    draw2dcurve(rmses, os.path.join(save_dir,'rmse.png'), 'RMSE', 'Training RMSE Curve')
+    draw2dcurve(l1s, os.path.join(save_dir,'l1.png'), 'L1', 'Training L1 Curve')
+    draw2dcurve(percentage_errors, os.path.join(save_dir,'percentage_error.png'), 'Percentage Error', 'Training Percentage Error Curve')
+    draw2dcurve(mainLs, os.path.join(save_dir,'mainloss.png'), 'Main Loss', 'Training Main Loss Curve')
+    draw2dcurve(maxLs, os.path.join(save_dir,'maxloss.png'), 'Max Loss', 'Training Max Loss Curve')
+    draw2dcurve(helmholtzLs, os.path.join(save_dir,'helmholtzloss.png'), 'Helmholtz Loss', 'Training Helmholtz Loss Curve')
+    draw2dcurve(bandlimitLs, os.path.join(save_dir,'bandlimitloss.png'), 'Bandlimit Loss', 'Training Bandlimit Loss Curve')
+    draw2dcurve(reciprocityLs, os.path.join(save_dir,'reciprocityloss.png'), 'Reciprocity Loss', 'Training Reciprocity Loss Curve')
 
-    plt.clf()
-    plt.plot(range(0, i+1), mses)
-    plt.xlabel('Epoch')
-    plt.ylabel('MSE')
-    plt.title('Training MSE Curve')
-    plt.savefig(msesavedir)
-    savefigdata(mses,img_path=msesavedir)
-    plt.close()
-
-    plt.clf()
-    plt.plot(range(0, i+1), nmses)
-    plt.xlabel('Epoch')
-    plt.ylabel('NMSE')
-    plt.title('Training NMSE Curve')
-    plt.savefig(nmsesavedir)
-    savefigdata(nmses,img_path=nmsesavedir)
-    plt.close()
-
-    plt.clf()
-    plt.plot(range(0, i+1), rmses)
-    plt.xlabel('Epoch')
-    plt.ylabel('RMSE')
-    plt.title('Training RMSE Curve')
-    plt.savefig(rmsesavedir)
-    plt.close()
-    savefigdata(rmses,img_path=rmsesavedir)
-
-
-    plt.clf()
-    plt.plot(range(0, i+1), l1s)
-    plt.xlabel('Epoch')
-    plt.ylabel('L1')
-    plt.title('Training L1 Curve')
-    plt.savefig(l1savedir)
-    plt.close()
-    savefigdata(l1s,img_path=l1savedir)
-
-    plt.clf()
-    plt.plot(range(0, i+1), percentage_errors)
-    plt.xlabel('Epoch')
-    plt.ylabel('Percentage Error')
-    plt.title('Training Percentage Error Curve')
-    plt.savefig(percentage_errorsavedir)
-    plt.close()
-    savefigdata(percentage_errors,img_path=percentage_errorsavedir)
 
     plt.clf() 
-    plt.plot(range(0, i+1), losses, label='Loss', color='black')
-    plt.plot(range(0, i+1), mses, label='MSE', color='blue')
-    plt.plot(range(0, i+1), rmses, label='RMSE', color='green')
-    plt.plot(range(0, i+1), l1s, label='L1', color='red')
+    plt.plot(range(0, i+1), losses, label='total_Loss')
+    plt.plot(range(0, i+1), mainLs, label='main_Loss')
+    plt.plot(range(0, i+1), maxLs, label='max_Loss')
+    plt.plot(range(0, i+1), helmholtzLs, label='helmholtz_Loss')
+    plt.plot(range(0, i+1), bandlimitLs, label='bandlimit_Loss')
+    plt.plot(range(0, i+1), reciprocityLs, label='reciprocity_Loss')
     plt.xlabel('Epoch')
-    plt.ylabel('Error')
-    plt.title('Training Error Curves')
+    plt.ylabel('Loss')
+    plt.title('Training Loss Curves')
     plt.legend()
-    plt.savefig(allinonesavedir)
+    plt.savefig(os.path.join(save_dir,'lossallinone.png'))
     plt.close()
 
     if args.fold:
@@ -534,9 +500,9 @@ for i in range(epoch):
         plt.ylabel('MSE')
         plt.title('Val MSE Curve')
         plt.legend()
-        plt.savefig(valmsesavedir)
+        plt.savefig(os.path.join(save_dir,'valmse.png'))
         plt.close()
-        savefigdata(allavemses,img_path=valmsesavedir)
+        savefigdata(allavemses,img_path=os.path.join(save_dir,'valmse.png'))
 
         plt.clf()
         for plane, psnr_values in val_psnr_per_plane.items():
@@ -547,9 +513,9 @@ for i in range(epoch):
         plt.ylabel('PSNR')
         plt.title('Val PSNR Curve')
         plt.legend()
-        plt.savefig(valpsnrsavedir)
+        plt.savefig(os.path.join(save_dir,'valpsnr.png'))
         plt.close()
-        savefigdata(allavepsnrs,img_path=valpsnrsavedir)
+        savefigdata(allavepsnrs,img_path=os.path.join(save_dir,'valpsnr.png'))
 
 
         plt.clf()
@@ -561,9 +527,9 @@ for i in range(epoch):
         plt.ylabel('SSIM')
         plt.title('Val SSIM Curve')
         plt.legend()
-        plt.savefig(valssimsavedir)
+        plt.savefig(os.path.join(save_dir,'valssim.png'))
         plt.close()
-        savefigdata(allavessims,img_path=valssimsavedir)
+        savefigdata(allavessims,img_path=os.path.join(save_dir,'valssim.png'))
 
         lastmse = {k: v[-1] for k, v in val_mse_per_plane.items() if v}
         lastpsnr = {k: v[-1] for k, v in val_psnr_per_plane.items() if v}
@@ -581,7 +547,7 @@ for i in range(epoch):
         plt.ylabel('MSE')
         plt.title('Train+Val MSE Curve')
         plt.legend()
-        plt.savefig(valmsesavedir2)
+        plt.savefig(os.path.join(save_dir,'Trainvalmse.png'))
         plt.close()
 
         plt.clf()
@@ -593,7 +559,7 @@ for i in range(epoch):
         plt.ylabel('PSNR')
         plt.title('Train+Val PSNR Curve')
         plt.legend()
-        plt.savefig(valpsnrsavedir2)
+        plt.savefig(os.path.join(save_dir,'Trainvalpsnr.png'))
         plt.close()
 
         plt.clf()
@@ -605,7 +571,7 @@ for i in range(epoch):
         plt.ylabel('SSIM')
         plt.title('Train+Val SSIM Curve')
         plt.legend()
-        plt.savefig(valssimsavedir2)
+        plt.savefig(os.path.join(save_dir,'Trainvalssim.png'))
         plt.close()
 
     else: #ID实验
@@ -635,84 +601,54 @@ for i in range(epoch):
         allavemses.append(valmse)
         allavepsnrs.append(valpsnr)
         allavessims.append(valssim)
+        lastmse = valmse
+        lastpsnr = valpsnr
+        lastssim = valssim
 
 
-        #只画val的
-        plt.clf()
-        plt.plot(range(0, i+1),allavemses, label='ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('MSE')
-        plt.title('Val MSE Curve')
-        plt.legend()
-        plt.savefig(valmsesavedir)
-        plt.close()
-        savefigdata(allavemses,img_path=valmsesavedir)
+        def draw2dcurve2(curve, savedir, ylabel, title):
+            plt.clf()
+            plt.figure(figsize=(7, 4.5))
+            plt.plot(range(0, i+1), curve, label='ave', linestyle='--')
+            plt.xlabel('Epoch')
+            plt.ylabel(ylabel)
+            plt.title(title)
+            plt.savefig(savedir)
+            savefigdata(curve,img_path=savedir)
+            plt.close()
+        draw2dcurve2(allavemses, os.path.join(save_dir,'valmse.png'), 'MSE', 'Val MSE Curve')
+        draw2dcurve2(allavepsnrs, os.path.join(save_dir,'valpsnr.png'), 'PSNR', 'Val PSNR Curve')
+        draw2dcurve2(allavessims, os.path.join(save_dir,'valssim.png'), 'SSIM', 'Val SSIM Curve')
 
-        plt.clf()
-        plt.plot(range(0, i+1),allavepsnrs, label='ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('PSNR')
-        plt.title('Val PSNR Curve')
-        plt.legend()
-        plt.savefig(valpsnrsavedir)
-        plt.close()
-        savefigdata(allavepsnrs,img_path=valpsnrsavedir)
-
-
-        plt.clf()
-        plt.plot(range(0, i+1),allavessims, label='ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('SSIM')
-        plt.title('Val SSIM Curve')
-        plt.legend()
-        plt.savefig(valssimsavedir)
-        plt.close()
-        savefigdata(allavessims,img_path=valssimsavedir)
-
-        #画val和train在一起的
-        plt.clf()
-        plt.plot(range(0, i+1),allavemses, label='val ave', linestyle='--')
-        plt.plot(range(0, i+1),mses, label='train ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('MSE')
-        plt.title('Train+Val MSE Curve')
-        plt.legend()
-        plt.savefig(valmsesavedir2)
-        plt.close()
-
-        plt.clf()
-        plt.plot(range(0, i+1),allavepsnrs, label='val ave', linestyle='--')
-        plt.plot(range(0, i+1),psnrs, label='train ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('PSNR')
-        plt.title('Train+Val PSNR Curve')
-        plt.legend()
-        plt.savefig(valpsnrsavedir2)
-        plt.close()
-
-        plt.clf()
-        plt.plot(range(0, i+1),allavessims, label='val ave', linestyle='--')
-        plt.plot(range(0, i+1),ssims, label='train ave', linestyle='--')
-        plt.xlabel('Epoch')
-        plt.ylabel('SSIM')
-        plt.title('Train+Val SSIM Curve')
-        plt.legend()
-        plt.savefig(valssimsavedir2)
-        plt.close()
+        def draw2dcurve3(curve1, curve2, savedir, ylabel, title):
+            plt.clf()
+            plt.figure(figsize=(7, 4.5))
+            plt.plot(range(0, i+1), curve1, label='val ave', linestyle='--')
+            plt.plot(range(0, i+1), curve2, label='train ave', linestyle='--')
+            plt.xlabel('Epoch')
+            plt.ylabel(ylabel)
+            plt.title(title)
+            plt.savefig(savedir)
+            plt.close()
+        draw2dcurve3(allavemses, mses, os.path.join(save_dir,'Trainvalmse.png'), 'MSE', 'Train+Val MSE Curve')
+        draw2dcurve3(allavepsnrs, psnrs, os.path.join(save_dir,'Trainvalpsnr.png'), 'PSNR', 'Train+Val PSNR Curve')
+        draw2dcurve3(allavessims, ssims, os.path.join(save_dir,'Trainvalssim.png'), 'SSIM', 'Train+Val SSIM Curve')
 
     if maxpsnr < valpsnr:
         maxpsnr = valpsnr
     # if minmse > valmse:
     #     minmse = valmse
-        if os.path.exists(maxsavedir):
-            os.remove(maxsavedir)
-        torch.save(autoencoder.state_dict(), maxsavedir)
+        # if os.path.exists(maxsavedir):
+        #     os.remove(maxsavedir)
+        # torch.save(autoencoder.state_dict(), maxsavedir)
 
-if i+1==epoch:
-    renamedir = save_dir+'p'+f'{maxpsnr:.2f}'
-    # renamedir = save_dir+'p'+f'{maxpsnr:.4f}'[2:]
-    os.rename(save_dir,renamedir)
-
+lasttime = (time.time()-tic0)/3600
 logger.info(f"damaged files：{corrupted_files}")
 logger.info(f'train finished time：{time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time()))}')
-logger.info(f'train time consume：{(time.time()-tic0)/3600:.2f}小时')
+logger.info(f'train time consume：{lasttime:.2f}小时')
+
+renamedir = save_dir+f'P{lastpsnr:.2f}'+f'S{lastssim:.4f}'+f'M{lastmse:.4f}'+ f'T{lasttime:.2f}h'
+os.rename(save_dir,renamedir)
+
+
+
