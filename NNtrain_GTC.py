@@ -1,8 +1,8 @@
 import torch
 import time
 from tqdm import tqdm
-from net.GTC_3DEMv3_2 import MeshCodec
-# from net.GTC_3DEMv3 import MeshCodec
+# from net.GTC_3DEMv3_2 import MeshCodec
+from net.GTC_3DEMv3 import MeshCodec
 import torch.utils.data.dataloader as DataLoader
 import os
 import sys

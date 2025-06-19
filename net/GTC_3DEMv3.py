@@ -374,4 +374,4 @@ class MeshCodec(Module):
                 'percentage_error': percentage_error
             }
             # 为了兼容你旧的训练脚本，我们还是按顺序返回
-            return total_loss, decoded, mean_psnr, psnr_list, mean_ssim, ssim_list, mse, nmse, rmse, l1, percentage_error, mse_list
+            return total_loss, decoded, mean_psnr, psnr_list, mean_ssim, ssim_list, mse, nmse, rmse, l1, percentage_error, mse_list, metrics
