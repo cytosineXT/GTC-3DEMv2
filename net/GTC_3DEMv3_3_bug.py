@@ -1,5 +1,5 @@
-# GTC-3DEMv3.2.py
-# 版本 3.2: 在v3.1基础上，进一步集成互易性约束
+# GTC-3DEMv3.3.py
+# 版本 3.3: 加入pinnepoch和lossfn优化，但是有bug。。。
 # 核心改动：
 # 1. (保留)亥姆霍兹约束 (Helmholtz Constraint): 确保生成的RCS图满足波动方程。
 # 2. (保留)频域带限约束 (Band-Limit Constraint): 确保生成的RCS图的频谱特征与物理波的频率相匹配。
@@ -96,7 +96,7 @@ def reciprocity_loss_fn(model, decoded_rcs, vertices, faces, face_edges, origina
     return loss
 
 # --- 修改后的复合损失函数 ---
-def loss_fn(decoded, GT, freqs_ghz, device, loss_type='L1', gama=0.001, lambda_helmholtz=0.1, lambda_bandlimit=0.1):
+def loss_fn(decoded, GT, freqs_ghz, device, vertices, faces, face_edges, original_in_em, epochnow, pinnepoch, loss_type='L1', gama=0.001, lambda_helmholtz=0.1, lambda_bandlimit=0.1, lambda_reciprocity=0.1,self=None):
     """
     计算一个复合损失，包含监督损失和物理先验损失。
     """
@@ -112,17 +112,30 @@ def loss_fn(decoded, GT, freqs_ghz, device, loss_type='L1', gama=0.001, lambda_h
     else: # 默认为L1
         supervision_loss = l1
         
-    primary_loss = supervision_loss + gama * maxloss
+    total_loss = supervision_loss + gama * maxloss
+    l1loss = total_loss.clone()
+    helmholtz_loss = 0
+    bandlimit_loss = 0
+    reciprocity_loss = 0
+
     
-    # 2. 计算物理先验损失
-    helmholtz_loss = calculate_helmholtz_loss(decoded, freqs_ghz, device)
-    bandlimit_loss = calculate_bandlimit_loss(decoded, freqs_ghz, device)
-    
-    # 3. 加权求和得到总损失
-    total_loss = primary_loss + lambda_helmholtz * helmholtz_loss + lambda_bandlimit * bandlimit_loss
-    
-    # 返回总损失以及各个子项，方便监控
-    return total_loss, primary_loss, helmholtz_loss, bandlimit_loss
+    if (pinnepoch > 0 and epochnow > pinnepoch) or pinnepoch <= 0 :#如果pinnloss从头开始，就0或者-1就行
+        if lambda_helmholtz > 0:
+            helmholtz_loss = calculate_helmholtz_loss(decoded, freqs_ghz, device)
+            total_loss += lambda_helmholtz * helmholtz_loss
+
+        if lambda_bandlimit > 0:
+            bandlimit_loss = calculate_bandlimit_loss(decoded, freqs_ghz, device)
+            total_loss += lambda_bandlimit * bandlimit_loss
+
+        if lambda_reciprocity > 0:
+            reciprocity_loss = reciprocity_loss_fn(self, decoded, vertices, faces, face_edges, original_in_em, device)
+            total_loss += lambda_reciprocity * reciprocity_loss
+
+    # l1 helm fft rec
+    # 0.3893 8.5668 0.1235 0.4017
+
+    return total_loss, l1loss, helmholtz_loss, bandlimit_loss, reciprocity_loss
 
 # --- 原有代码（保持不变）---
 def l2norm(t):
@@ -314,6 +327,8 @@ class MeshCodec(Module):
         self.lambda_helmholtz = kwargs.get('lambda_helmholtz', self.lambda_helmholtz)
         self.lambda_bandlimit = kwargs.get('lambda_bandlimit', self.lambda_bandlimit)
         self.lambda_reciprocity = kwargs.get('lambda_reciprocity', self.lambda_reciprocity) # (新增)
+        epochnow = kwargs.get('epochnow', 0)
+        pinnepoch = kwargs.get('pinnepoch', 0)
         
         # 保存原始输入，以供互易性损失计算使用
         original_in_em = [in_em[0], in_em[1].clone(), in_em[2].clone(), in_em[3].clone()]
@@ -333,25 +348,18 @@ class MeshCodec(Module):
                 GT = GT[:, :-1, :]
             
             # 计算v3.1的复合损失
-            total_loss, primary_loss, helmholtz_loss, bandlimit_loss = loss_fn(
+            total_loss, primary_loss, helmholtz_loss, bandlimit_loss, reciprocity_loss = loss_fn(
                 decoded=decoded, GT=GT, freqs_ghz=original_in_em[3], device=device,
+                vertices=vertices, faces=faces, face_edges=face_edges, original_in_em=original_in_em,
+                epochnow=epochnow, pinnepoch=pinnepoch,
                 loss_type=loss_type, gama=gama, 
                 lambda_helmholtz=self.lambda_helmholtz, 
-                lambda_bandlimit=self.lambda_bandlimit
+                lambda_bandlimit=self.lambda_bandlimit,
+                lambda_reciprocity=self.lambda_reciprocity,
+                self=self,
             )
             
-            # (新增) 计算并加入互易性损失
-            reciprocity_loss = torch.tensor(0.0, device=device)
-            if self.lambda_reciprocity > 0:
-                reciprocity_loss = reciprocity_loss_fn(
-                    self, decoded, vertices, faces, face_edges, original_in_em, device
-                )
             
-            # (新增) 将互易性损失加入总损失
-            total_loss += self.lambda_reciprocity * reciprocity_loss
-            # l1 helm fft rec
-            # 0.3893 8.5668 0.1235 0.4017
-
             # 计算其他指标用于监控
             with torch.no_grad():
                 psnr_list = psnr(decoded, GT)
@@ -373,14 +381,14 @@ class MeshCodec(Module):
                 'helmholtz_loss': helmholtz_loss,
                 'bandlimit_loss': bandlimit_loss,
                 'reciprocity_loss': reciprocity_loss, # (新增)
-                'decoded': decoded,
-                'psnr': mean_psnr,
-                'ssim': mean_ssim,
-                'mse': mse,
-                'nmse': nmse,
-                'rmse': rmse,
-                'l1': l1,
-                'percentage_error': percentage_error
+                # 'decoded': decoded,
+                # 'psnr': mean_psnr,
+                # 'ssim': mean_ssim,
+                # 'mse': mse,
+                # 'nmse': nmse,
+                # 'rmse': rmse,
+                # 'l1': l1,
+                # 'percentage_error': percentage_error
             }
             # 为了兼容你旧的训练脚本，我们还是按顺序返回
             return total_loss, decoded, mean_psnr, psnr_list, mean_ssim, ssim_list, mse, nmse, rmse, l1, percentage_error, mse_list, metrics

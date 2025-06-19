@@ -1,8 +1,8 @@
 import torch
 import time
 from tqdm import tqdm
-# from net.GTC_3DEMv3_2 import MeshCodec
-from net.GTC_3DEMv3 import MeshCodec
+from net.GTC_3DEMv3_2 import MeshCodec
+# from net.GTC_3DEMv3_1 import MeshCodec
 import torch.utils.data.dataloader as DataLoader
 import os
 import sys
@@ -91,7 +91,7 @@ batchsize = args.batch
 valbatch = args.valbatch
 loss_type = args.loss
 
-gama = args.lam_max
+lambda_max = args.lam_max
 lambda_helmholtz = args.lam_hel
 lambda_bandlimit = args.lam_fft
 lambda_reciprocity = args.lam_rec
@@ -233,9 +233,6 @@ logger.info(f'device:{device}')
 autoencoder = MeshCodec(
     device = device,
     attn_encoder_depth = attnlayer,
-    lambda_helmholtz=lambda_helmholtz,
-    lambda_bandlimit=lambda_bandlimit,
-    lambda_reciprocity=lambda_reciprocity
 )
 get_model_memory(autoencoder,logger)
 total_params = sum(p.numel() for p in autoencoder.parameters())
@@ -284,11 +281,14 @@ for i in range(epoch):
             GT = rcs1.to(device),
             logger = logger,
             device = device,
-            gama=gama,
             loss_type=loss_type,
             epochnow = i,
             pinnepoch= args.pinnepoch,
             epoch_flag = epoch_flag,
+            lambda_max=lambda_max,
+            lambda_helmholtz=lambda_helmholtz,
+            lambda_bandlimit=lambda_bandlimit,
+            lambda_reciprocity=lambda_reciprocity,
         )
 
         if epoch_flag == 1:
