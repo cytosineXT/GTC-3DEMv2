@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument('--lam_hel', type=float, default=0.001, help='control helmholtz loss, i love 0.001')
     parser.add_argument('--lam_fft', type=float, default=0, help='control fft loss, i love 0.001')
     parser.add_argument('--lam_rec', type=float, default=0, help='control receprocity loss, i love 0.001')
-    parser.add_argument('--pinnepoch', type=int, default=0, help='Number of pinn loss adding epochs, if epochnow > pinnepoch, start to add pinn loss. 0 or -1 start from beginning, >200 means never add pinn loss')
+    parser.add_argument('--pinnepoch', type=int, default=-1, help='Number of pinn loss adding epochs, if epochnow > pinnepoch, start to add pinn loss. 0 or -1 start from beginning, >200 means never add pinn loss')
 
 
     return parser.parse_args()
@@ -648,7 +648,7 @@ logger.info(f"damaged files：{corrupted_files}")
 logger.info(f'train finished time：{time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(time.time()))}')
 logger.info(f'train time consume：{lasttime:.2f}小时')
 
-renamedir = save_dir+f'P{lastpsnr:.2f}-'+f'S{lastssim:.4f}-'+f'M{lastmse:.4f}-'+ f'T{lasttime:.2f}h'
+renamedir = save_dir+f'p{lastpsnr:.2f}-'+f's{lastssim:.4f}-'+f'm{lastmse:.4f}-'+ f't{lasttime:.2f}h'
 os.rename(save_dir,renamedir)
 
 

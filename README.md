@@ -45,6 +45,7 @@ nn.linear embed
 
 # v3 
 v3.0 2025年6月12日20:31:08 PINN:helmholtz fft loss, helmloss without log
-v3.1 helmloss with log
+v3.1 2025年6月13日14:19:05 helmloss with log
 v3.2 2025年6月15日11:11:17 add reciporcity loss 
 v3.3 2025年6月15日11:50:59 add pinnepoch, refine loss_fn
+     2025年6月19日19:47:09 rewrite v3.3 loss, refine NNtrain_GTC.py plot and name 
