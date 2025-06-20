@@ -219,7 +219,7 @@ def calculate_reciprocity_metric_gt(
 
 # --- 主评估函数 ---
 
-def evaluate_physical_metrics(dataset_path: str, device_str: str = 'cuda:0', batch_size: int = 4) -> tuple:
+def evaluate_physical_metrics(dataset_path: str, device_str: str = 'cuda:0', batch_size: int = 4, basedir: str = '') -> tuple:
     """
     在给定数据集上评估物理指标（亥姆霍兹一阶、亥姆霍兹二阶、频域带限、互易性）。
     此版本不再依赖模型权重，直接计算 GT 数据的物理指标。
@@ -235,9 +235,13 @@ def evaluate_physical_metrics(dataset_path: str, device_str: str = 'cuda:0', bat
     device = torch.device(device_str if torch.cuda.is_available() else "cpu")
 
     from datetime import datetime
-    save_dir = increment_path(f'output/PINNmetrics/{datetime.today().strftime("%m%d")}_{dataset_path.split("/")[-1]}_', exist_ok=False)
-    logger = get_logger(os.path.join(save_dir,'log.txt'))
-    logger.info(f"开始在 {dataset_path} 上使用设备 {device} 计算 GT 物理指标")
+    if basedir != '':
+        save_dir = basedir
+        # save_dir = os.path.join(basedir,f'{dataset_path.split("/")[-1]}')
+    else:
+        save_dir = increment_path(f'output/PINNmetrics/{datetime.today().strftime("%m%d")}_{dataset_path.split("/")[-1]}_', exist_ok=False)
+    logger = get_logger(os.path.join(save_dir,f'{dataset_path.split("/")[-1]}.txt'))
+    logger.info(f"开始在 {dataset_path} 上使用设备 {device} 计算 GT 物理指标并保存到 {save_dir}")
 
     # --- 阶段 1: 预加载所有文件元数据以支持互易性查找 ---
     rcs_data_map = {} # 存储 (plane, theta_in, phi_in, freq) -> file_path

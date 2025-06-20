@@ -16,13 +16,10 @@ from PINN_metrics import evaluate_physical_metrics, get_logger, increment_path #
 
 def main():
     parser = argparse.ArgumentParser(description="批量计算 RCS 数据集子文件夹的物理指标。")
-    parser.add_argument('--base_data_dir', type=str, 
-                        default='/mnt/truenas_jiangxiaotian/allplanes/mie', 
-                        help='包含所有数据子文件夹的主目录。')
-    parser.add_argument('--cuda', type=str, default='cpu', 
-                        help='要使用的 CUDA 设备 (例如, cuda:0, cuda:1, cpu)。')
-    parser.add_argument('--batch_size', type=int, default=12, 
-                        help='评估的批次大小。')
+    parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_main_datasets/allplanes/mie', help='包含所有数据子文件夹的主目录。') #305wsl
+    # parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_jiangxiaotian/allplanes/mie', help='包含所有数据子文件夹的主目录。') #3090l
+    parser.add_argument('--cuda', type=str, default='cuda:0', help='要使用的 CUDA 设备 (例如, cuda:0, cuda:1, cpu)。')
+    parser.add_argument('--batch_size', type=int, default=64, help='评估的批次大小。')
     
     args = parser.parse_args()
 
@@ -66,7 +63,8 @@ def main():
             samples, avg_h1, avg_h2, avg_bl, avg_rec = evaluate_physical_metrics(
                 dataset_path=folder_path,
                 device_str=args.cuda,
-                batch_size=args.batch_size
+                batch_size=args.batch_size,
+                basedir = output_base_dir
             )
 
             processing_time = time.time() - start_time

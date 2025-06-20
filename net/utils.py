@@ -274,7 +274,7 @@ def get_logger(filename, verbosity=1, name=None):
     logger = logging.getLogger(name)
     logger.setLevel(level_dict[verbosity])
  
-    fh = logging.FileHandler(filename, "w")
+    fh = logging.FileHandler(filename, "w", encoding='utf-8')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
  
