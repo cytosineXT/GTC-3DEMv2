@@ -99,7 +99,7 @@ def calculate_helmholtz_second_order_metric_gt(rcs_gt: torch.Tensor, freqs_ghz: 
 
     helmholtz_residual = laplacian_of_rcs + k_squared * rcs_gt_batch
     # 返回残差的均方值作为指标
-    return torch.mean(helmholtz_residual.pow(2))
+    return torch.log1p(torch.mean(helmholtz_residual.pow(2)))
 
 def calculate_bandlimit_metric_gt(rcs_gt: torch.Tensor, freqs_ghz: torch.Tensor, device: torch.device, alpha: float = 10.0) -> torch.Tensor:
     """

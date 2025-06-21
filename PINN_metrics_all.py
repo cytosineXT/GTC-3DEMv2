@@ -16,14 +16,14 @@ from PINN_metrics import evaluate_physical_metrics, get_logger, increment_path #
 
 def main():
     parser = argparse.ArgumentParser(description="批量计算 RCS 数据集子文件夹的物理指标。")
-    parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_main_datasets/allplanes/mie', help='包含所有数据子文件夹的主目录。') #305wsl
-    # parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_jiangxiaotian/allplanes/mie', help='包含所有数据子文件夹的主目录。') #3090l
-    parser.add_argument('--cuda', type=str, default='cuda:0', help='要使用的 CUDA 设备 (例如, cuda:0, cuda:1, cpu)。')
-    parser.add_argument('--batch_size', type=int, default=64, help='评估的批次大小。')
+    # parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_main_datasets/allplanes/mie', help='包含所有数据子文件夹的主目录。') #305wsl
+    parser.add_argument('--base_data_dir', type=str, default='/mnt/truenas_jiangxiaotian/allplanes/mie', help='包含所有数据子文件夹的主目录。') #3090l
+    parser.add_argument('--cuda', type=str, default='cpu', help='要使用的 CUDA 设备 (例如, cuda:0, cuda:1, cpu)。')
+    parser.add_argument('--batch_size', type=int, default=12, help='评估的批次大小。')
     
     args = parser.parse_args()
 
-    output_base_dir = increment_path(f'output/PINNmetrics/{datetime.today().strftime("%m%d")}_{args.base_data_dir.split("/")[-1]}_allinoneCSV', exist_ok=False)
+    output_base_dir = increment_path(f'output/PINNmetrics/{datetime.today().strftime("%m%d")}_{args.base_data_dir.split("/")[-1]}folds_logHelm_', exist_ok=False)
     results_csv_path = output_base_dir / f"physical_metrics_results.csv"
 
     # CSV 表头
@@ -35,13 +35,8 @@ def main():
 
     # 获取所有子文件夹
     subfolders_to_process = []
-    # os.listdir() 足够，因为它只列出当前目录下的文件和文件夹
-    # 如果子文件夹内还有子文件夹，且它们也是数据文件夹，需要 os.walk
-    # 根据你的描述，b8ed_mie_10train 这些都在 /mnt/truenas_jiangxiaotian/allplanes/mie 下，所以直接 os.listdir + isdir 即可
     for entry in os.listdir(args.base_data_dir):
         full_path = os.path.join(args.base_data_dir, entry)
-        # 假设所有符合模式 "bXXX_mie_YYY" 的都是数据文件夹
-        # if os.path.isdir(full_path) and re.match(r"b[0-9a-f]{3}_mie_.+", entry):
         subfolders_to_process.append(full_path)
     
     # 按文件夹名称排序，以便输出顺序一致
