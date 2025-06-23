@@ -53,7 +53,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=7, help='Random seed for reproducibility')
     parser.add_argument('--attn', type=int, default=0, help='Transformer layers')
     parser.add_argument('--lr', type=float, default=0.001, help='Loss threshold or gamma parameter')
-    parser.add_argument('--cuda', type=str, default='cpu', help='CUDA device to use(cpu cuda:0 cuda:1...)')
+    parser.add_argument('--cuda', type=str, default='cuda:0', help='CUDA device to use(cpu cuda:0 cuda:1...)')
     parser.add_argument('--fold', type=str, default=None, help='Fold to use for validation (None fold1 fold2 fold3 fold4)')
 
     parser.add_argument('--lam_max', type=float, default=0.001, help='control max loss, i love 0.001')

@@ -306,9 +306,16 @@ class EMRCSDataset(Dataset.Dataset):
     def __getitem__(self, index):    #得到数据内容和标签
         import re
         file = self.filelist[index]
-        plane, theta, phi, freq= re.search(r"([a-zA-Z0-9]{4})_theta(\d+)phi(\d+)f(\d.+).pt", file).groups()
-        theta = int(theta)
-        phi = int(phi)
+        # plane, theta, phi, freq= re.search(r"([a-zA-Z0-9]{4})_theta(\d+)phi(\d+)f(\d.+).pt", file).groups()
+        try:
+            try:
+                plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d+)(?:_)?phi(\d+)(?:_)?f(\d+\.\d+).pt", file).groups() #thet
+            except:
+                plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d.+)_phi(-\d.+)_f(\d+\.\d+).pt", file).groups() #修复了-phi读取，但是为什么会有-phi还是没搞明白。。
+        except:
+            plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d+\.\d+)phi(\d+\.\d+)f(\d+\.\d+).pt", file).groups() #真实值而不是推理值
+        theta = float(theta)
+        phi = float(phi)
         freq = float(freq)
         in_em = [plane,theta,phi,freq]
         rcs = torch.load(os.path.join(self.rcsdir,file), weights_only=False)

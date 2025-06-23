@@ -1,6 +1,7 @@
 import torch
 import time
-from net.GTC_3DEMv2 import MeshCodec
+from net.GTC_3DEMv3_3 import MeshCodec
+# from net.GTC_3DEMv2 import MeshCodec
 # from net.jxtnet_GNNn0118acEn import MeshCodec
 from net.utils import increment_path, EMRCSDataset, get_logger, find_matching_files, process_files,savefigdata
 import torch.utils.data.dataloader as DataLoader
@@ -169,7 +170,7 @@ def valmain(draw, device, weight, rcsdir, save_dir, logger, epoch, trainval=Fals
             planesur_faces, planesur_verts, planesur_faceedges, geoinfo = process_files(objlist, device)
 
             start_time0 = time.time()
-            loss, outrcs, psnr_mean, psnrlist, ssim_mean, ssimlist, mse, nmse, rmse, l1, percentage_error, mselist= autoencoder( #这里使用网络，是进去跑了forward
+            loss, outrcs, psnr_mean, psnrlist, ssim_mean, ssimlist, mse, nmse, rmse, l1, percentage_error, mselist, metrics= autoencoder( #这里使用网络，是进去跑了forward
                 vertices = planesur_verts,
                 faces = planesur_faces, #torch.Size([batchsize, 33564, 3])
                 face_edges = planesur_faceedges,
@@ -231,7 +232,8 @@ def valmain(draw, device, weight, rcsdir, save_dir, logger, epoch, trainval=Fals
             logger.info(f'test set dir:{rcsdir}, total time consume:{time.strftime("%H:%M:%S", time.gmtime(time.time()-tic))}')
             logger.info(f"damaged files：{corrupted_files}")
         logger.info(f'val set:{rcsdir}, total time consume:{time.strftime("%H:%M:%S", time.gmtime(time.time()-tic))}')
-        logger.info(f'↑----val loss:{ave_loss:.4f},psnr:{ave_psnr:.2f},ssim:{ave_ssim:.4f},mse:{ave_mse:.4f},inftime:{ave_inftime:.4f}s----↑')
+        logger.info(f'↑----val psnr:{ave_psnr:.2f},ssim:{ave_ssim:.4f},mse:{ave_mse:.4f},inftime:{ave_inftime:.4f}s----↑') #这个val loss没用
+        # logger.info(f'↑----val loss:{ave_loss:.4f},psnr:{ave_psnr:.2f},ssim:{ave_ssim:.4f},mse:{ave_mse:.4f},inftime:{ave_inftime:.4f}s----↑') #这个val loss没用
 
         statisdir = os.path.join(save_dir,f'sta/statistic_epoch{epoch}_PSNR{ave_psnr:.2f}dB_SSIM{ave_ssim:.4f}_MSE:{ave_mse:.4f}_Loss{ave_loss:.4f}.png')
         if not os.path.exists(os.path.dirname(statisdir)):

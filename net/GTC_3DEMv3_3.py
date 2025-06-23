@@ -173,7 +173,7 @@ def get_derived_face_featuresjxt(face_coords, in_em, device):
     edge1, edge2, *_ = (face_coords - shifted_face_coords).unbind(dim = 2)
     normals = l2norm(torch.cross(edge1, edge2, dim = -1))
     area = torch.cross(edge1, edge2, dim = -1).norm(dim = -1, keepdim = True) * 0.5
-    incident_angle_vec = polar_to_cartesian2(in_em[1],in_em[2])
+    incident_angle_vec = torch.tensor(polar_to_cartesian2(in_em[1],in_em[2]), dtype=torch.float32) #这里成float64了。。
     incident_angle_mtx = incident_angle_vec.unsqueeze(1).repeat(1, area.shape[1], 1).to(device)
     incident_freq_mtx = in_em[3].float().unsqueeze(1).unsqueeze(2).repeat(1, area.shape[1], 1).to(device)
     incident_mesh_anglehudu, _ = vector_anglejxt2(normals, incident_angle_mtx)
@@ -312,14 +312,15 @@ class MeshCodec(Module):
         device =vertices.device 
         face_coords = jxtget_face_coords(vertices, faces) 
         in_em[3]=transform_to_log_coordinates(in_em[3]) #频率转换为对数坐标 加在encoder里！
+        in_em = [in_em[0], in_em[1].float(), in_em[2].float(), in_em[3].float()] #将角度和频率转换为float32
         derived_features = get_derived_face_featuresjxt(face_coords, in_em, device) #这一步用了2s
 
         
         angle_embed = self.angle_embed(derived_features['angles'])
         area_embed = self.area_embed(derived_features['area'])
-        normal_embed = self.normal_embed(derived_features['normals'])
+        normal_embed = self.normal_embed(derived_features['normals'])#这里都是float32
 
-        emnoangle_embed = self.emnoangle_embed(derived_features['emnoangle']) #jxt
+        emnoangle_embed = self.emnoangle_embed(derived_features['emnoangle']) #jxt 这个怎么变成float64了
         emangle_embed = self.emangle_embed(derived_features['emangle']) #jxt torch.Size([2, 20804, 3])
         emfreq_embed = self.emfreq_embed(derived_features['emfreq'])
         face_coords = rearrange(face_coords, 'b nf nv c -> b nf (nv c)') # 9 or 12 coordinates per face #重新排布
