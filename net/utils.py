@@ -298,9 +298,11 @@ def increment_path(path, exist_ok=False, sep="", mkdir=True):
     return path
 
 class EMRCSDataset(Dataset.Dataset):
-    def __init__(self, filelist, rcsdir):    #初始化，定义数据内容和标签
-        self.filelist = filelist
+    def __init__(self, rcsdir):    #初始化，定义数据内容和标签
         self.rcsdir = rcsdir
+        self.filelist = os.listdir(rcsdir)  #这两个有点冗余了，可以只传入rcsdir，然后filelist = os.listdir(rcsdir) #这样就可以了
+        # self.filelist = filelist #这两个有点冗余了，可以只传入rcsdir，然后filelist = os.listdir(rcsdir) #这样就可以了
+        
     def __len__(self):    #返回数据集大小
         return len(self.filelist)
     def __getitem__(self, index):    #得到数据内容和标签
@@ -320,6 +322,30 @@ class EMRCSDataset(Dataset.Dataset):
         in_em = [plane,theta,phi,freq]
         rcs = torch.load(os.path.join(self.rcsdir,file), weights_only=False)
         return in_em, rcs
+
+# class EMRCSDataset(Dataset.Dataset):
+#     def __init__(self, filelist, rcsdir):    #初始化，定义数据内容和标签
+#         self.filelist = filelist #这两个有点冗余了，可以只传入rcsdir，然后filelist = os.listdir(rcsdir) #这样就可以了
+#         self.rcsdir = rcsdir
+#     def __len__(self):    #返回数据集大小
+#         return len(self.filelist)
+#     def __getitem__(self, index):    #得到数据内容和标签
+#         import re
+#         file = self.filelist[index]
+#         # plane, theta, phi, freq= re.search(r"([a-zA-Z0-9]{4})_theta(\d+)phi(\d+)f(\d.+).pt", file).groups()
+#         try:
+#             try:
+#                 plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d+)(?:_)?phi(\d+)(?:_)?f(\d+\.\d+).pt", file).groups() #thet
+#             except:
+#                 plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d.+)_phi(-\d.+)_f(\d+\.\d+).pt", file).groups() #修复了-phi读取，但是为什么会有-phi还是没搞明白。。
+#         except:
+#             plane, theta, phi, freq= re.search(r"(?:synth_)?([a-zA-Z0-9]{4})_theta(\d+\.\d+)phi(\d+\.\d+)f(\d+\.\d+).pt", file).groups() #真实值而不是推理值
+#         theta = float(theta)
+#         phi = float(phi)
+#         freq = float(freq)
+#         in_em = [plane,theta,phi,freq]
+#         rcs = torch.load(os.path.join(self.rcsdir,file), weights_only=False)
+#         return in_em, rcs
 
 class MultiEMRCSDataset(Dataset.Dataset):
     def __init__(self, folder_list, base_dir):  # 初始化，传入文件夹列表和基础目录

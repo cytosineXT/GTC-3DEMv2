@@ -199,12 +199,14 @@ if args.fold:
 
 else:
     logger.info(f'train set is{rcsdir}')
-    filelist = os.listdir(rcsdir)
-    dataset = EMRCSDataset(filelist, rcsdir)
+    # filelist = os.listdir(rcsdir)
+    dataset = EMRCSDataset(rcsdir)
+    # dataset = EMRCSDataset(filelist, rcsdir)
     dataloader = DataLoader.DataLoader(dataset, batch_size=batchsize, shuffle=shuffle, num_workers=cpucore, pin_memory=True) #这里调用的是getitem
 
-    valfilelist = os.listdir(valdir)
-    valdataset = EMRCSDataset(valfilelist, valdir) #这里进的是init
+    # valfilelist = os.listdir(valdir)
+    valdataset = EMRCSDataset(valdir) #这里进的是init
+    # valdataset = EMRCSDataset(valfilelist, valdir) #这里进的是init
     valdataloader = DataLoader.DataLoader(valdataset, batch_size=valbatch, shuffle=shuffle, num_workers=cpucore, pin_memory=True) #transformer的话40才行？20.。 纯GNN的话60都可以
     logger.info(f'train set samples:{dataset.__len__()}，val set samples:{valdataset.__len__()}')
 

@@ -274,8 +274,9 @@ if __name__ == '__main__':
     logger = get_logger(logdir)
     epoch = -1
     
-    valfilelist = os.listdir(valdir)
-    valdataset = EMRCSDataset(valfilelist, valdir)
+    # valfilelist = os.listdir(valdir)
+    valdataset = EMRCSDataset(valdir)
+    # valdataset = EMRCSDataset(valfilelist, valdir)
     valdataloader = DataLoader.DataLoader(valdataset, batch_size=batchsize, shuffle=False, num_workers=16, pin_memory=True)
     if trainval == False:
         logger.info(f'using model weight{weight} inference test set{valdir} and draw')
